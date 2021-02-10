@@ -1,0 +1,62 @@
+var express=require("express");
+
+var bodyParser=require('body-parser');
+
+var jwt= require("jsonwebtoken");
+
+var app = express();
+
+var router=express.Router();
+
+app.use(bodyParser.urlencoded({ extended: false }));
+app.all('*', function(req, res, next) {
+    res.header('Access-Control-Allow-Origin', 'http://localhost');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
+    res.header('Access-Control-Allow-Headers', "Origin, X-Requested-With, Content-Type, Accept, authentication-token, application/json, charset=utf-8");
+    if ('OPTIONS' == req.method) {
+    res.sendStatus(200);
+    } else {
+      next();
+    }
+});
+
+
+var authenticateController = require('./controllers/authenticate-controller');
+
+var appoinmentController = require('./controllers/appoinment-controller');
+
+var appoinmentlistController = require('./controllers/appoinment-controller');
+process.env.SECRET_KEY="purple";
+
+app.use(bodyParser.urlencoded({extended:true}));
+
+app.use(bodyParser.json());
+
+/* route to handle login and registration */
+
+app.post('/api/appoinment',appoinmentController.appoinment);
+app.post('/api/appoinmentlist',appoinmentlistController.appoinmentlist);
+
+app.post('/api/authenticate',authenticateController.authenticate);
+//app.post('/api/appoinment',appoinmentController.appoinment);
+
+app.use('/secure-api',router);
+// validation middleware
+router.use(function(req,res,next){
+    var token=req.body.token || req.headers['token'];
+    if(token){
+        jwt.verify(token,process.env.SECRET_KEY,function(err,ress){
+            if(err){
+                res.status(500).send('Token Invalid');
+            }else{
+                next();
+            }
+        })
+    }else{
+        res.send('Please send a token')
+    }
+})
+router.get('/home',function(req,res){
+    res.send('Token Verified')
+})
+app.listen(3000);
